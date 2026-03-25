@@ -5,7 +5,7 @@
  * Base URL can be overridden via VITE_API_URL env var.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL ?? 'https://diprajmitra-predict-the-pitch-api.hf.space';
 
 async function fetchInternal(endpoint, homeTeam, awayTeam) {
   const res = await fetch(`${API_BASE}${endpoint}`, {
