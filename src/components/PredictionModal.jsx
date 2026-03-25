@@ -7,7 +7,7 @@ export default function PredictionModal({ match, onClose }) {
   const overlayRef = useRef(null);
   const isFinal = match.stage === 'Final';
 
-  // State mapped from both models
+
   const {
     stage: currentStage,
     team_a, team_b,
@@ -30,7 +30,7 @@ export default function PredictionModal({ match, onClose }) {
   const aWins = isFinal ? champion === team_a : advancing_team === team_a;
   const bWins = isFinal ? champion === team_b : advancing_team === team_b;
   const winner = isFinal ? champion : advancing_team;
-  
+
   // Format score based on stage
   let scoreLeft, scoreRight;
   if (isFinal) {
@@ -95,13 +95,13 @@ export default function PredictionModal({ match, onClose }) {
 
         <div className="px-6 py-4 space-y-5 overflow-y-auto flex-1">
 
-          {/* ── Scoreline ───────────────────────────── */}
+
           <section>
             <div className="rounded-xl px-4 py-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <p className="text-center text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-4">
                 Predicted {isFinal ? 'Scoreline' : 'Aggregate Score'}
               </p>
-              
+
               <div className="flex items-center justify-center gap-4 sm:gap-6">
                 {/* Team A */}
                 <div className="flex-1 flex flex-col items-center">
@@ -127,13 +127,13 @@ export default function PredictionModal({ match, onClose }) {
                 <div className="flex flex-col items-center gap-2">
                   <div className="px-5 py-3 rounded-xl bg-slate-900/50 border border-white/5 flex flex-col items-center justify-center shadow-inner">
                     <span
-                      className="text-3xl sm:text-4xl font-black tabular-nums text-white"
+                      className="text-3xl sm:text-4xl font-black tabular-nums text-white whitespace-nowrap"
                       style={{ fontFamily: "'Rajdhani', sans-serif" }}
                     >
                       {scoreLeft} – {scoreRight}
                     </span>
                     {typeof finalXgA === 'number' && typeof finalXgB === 'number' && (
-                      <span className="text-[10px] text-slate-400 font-semibold tracking-widest mt-1">
+                      <span className="text-[10px] text-slate-400 font-semibold tracking-widest mt-1 whitespace-nowrap">
                         (xG: {finalXgA.toFixed(2)}) - (xG: {finalXgB.toFixed(2)})
                       </span>
                     )}
@@ -163,7 +163,7 @@ export default function PredictionModal({ match, onClose }) {
             </div>
           </section>
 
-          {/* ── Two-Leg Breakdown (Non-Final Only) ─────────────── */}
+
           {!isFinal && (
             <section>
               <div className="flex items-center gap-2 mb-3">
@@ -189,7 +189,7 @@ export default function PredictionModal({ match, onClose }) {
             </section>
           )}
 
-          {/* ── Probability breakdown (Final Only) ─────────────── */}
+
           {isFinal && typeof team_a_win_prob === 'number' && (
             <section>
               <div className="flex items-center gap-2 mb-3">
@@ -209,7 +209,7 @@ export default function PredictionModal({ match, onClose }) {
             </section>
           )}
 
-          {/* ── Confidence Indicator ─────────────── */}
+
           {typeof confidence === 'number' && (
             <section>
               <div className="flex items-center justify-between mb-2">
@@ -217,24 +217,23 @@ export default function PredictionModal({ match, onClose }) {
                   <Activity size={14} className="text-slate-400" />
                   <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Prediction Confidence</h3>
                 </div>
-                <span className={`text-xs font-black tracking-widest ${
-                  confidence > 60 ? 'text-emerald-400' :
+                <span className={`text-xs font-black tracking-widest ${confidence > 60 ? 'text-emerald-400' :
                   confidence > 45 ? 'text-yellow-400' : 'text-slate-400'
-                }`}>
+                  }`}>
                   {confidence.toFixed(1)}%
                 </span>
               </div>
-              
+
               <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
                 The machine learning model's overall confidence predicting this specific matchup based on historical data patterns and expected outcome probabilities.
               </p>
 
               <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5 relative shadow-inner">
-                <div 
+                <div
                   className={`absolute top-0 left-0 bottom-0 transition-all duration-[1500ms] ease-out 
                     ${confidence > 60 ? 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]' :
                       confidence > 45 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]' :
-                      'bg-gradient-to-r from-slate-600 to-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.5)]'
+                        'bg-gradient-to-r from-slate-600 to-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.5)]'
                     }`}
                   style={{ width: `${Math.min(100, Math.max(0, confidence))}%` }}
                 />
@@ -242,7 +241,7 @@ export default function PredictionModal({ match, onClose }) {
             </section>
           )}
 
-          {/* ── Winner result block ────────── */}
+
           <div
             className="rounded-xl px-5 py-4 flex items-center gap-4"
             style={{
