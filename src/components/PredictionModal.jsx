@@ -102,16 +102,16 @@ export default function PredictionModal({ match, onClose }) {
                 Predicted {isFinal ? 'Scoreline' : 'Aggregate Score'}
               </p>
 
-              <div className="flex items-center justify-center gap-4 sm:gap-6">
+              <div className="flex items-center justify-between gap-1 sm:gap-6">
                 {/* Team A */}
-                <div className="flex-1 flex flex-col items-center">
+                <div className="flex-1 flex flex-col items-center min-w-0">
                   <img
                     src={getTeamLogo(team_a)}
                     alt={team_a}
                     className="w-14 h-14 sm:w-16 sm:h-16 object-contain mb-3 drop-shadow-md"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
-                  <p className={`text-center font-bold text-sm sm:text-base leading-tight
+                  <p className={`text-center font-bold text-xs sm:text-base leading-tight px-1
                     ${aWins ? 'text-emerald-400' : 'text-slate-300'}`}
                   >
                     {team_a}
@@ -124,31 +124,35 @@ export default function PredictionModal({ match, onClose }) {
                 </div>
 
                 {/* Score box */}
-                <div className="flex flex-col items-center gap-2">
-                  <div className="px-5 py-3 rounded-xl bg-slate-900/50 border border-white/5 flex flex-col items-center justify-center shadow-inner">
+                <div className="flex flex-col items-center gap-2 flex-shrink-0 min-w-[120px]">
+                  <div className="px-3 py-3 sm:px-5 rounded-xl bg-slate-900/50 border border-white/5 flex flex-col items-center justify-center shadow-inner">
+
+                    {/* This span forces the numbers and dash to stay together */}
                     <span
-                      className="text-3xl sm:text-4xl font-black tabular-nums text-white whitespace-nowrap"
+                      className="text-2xl sm:text-4xl font-black tabular-nums text-white whitespace-nowrap"
                       style={{ fontFamily: "'Rajdhani', sans-serif" }}
                     >
                       {scoreLeft} – {scoreRight}
                     </span>
+
                     {typeof finalXgA === 'number' && typeof finalXgB === 'number' && (
-                      <span className="text-[10px] text-slate-400 font-semibold tracking-widest mt-1 whitespace-nowrap">
-                        (xG: {finalXgA.toFixed(2)}) - (xG: {finalXgB.toFixed(2)})
+                      /* This span forces the xG to stay together */
+                      <span className="text-[9px] sm:text-[10px] text-slate-400 font-semibold tracking-widest mt-1 whitespace-nowrap">
+                        (xG: {finalXgA.toFixed(2)}) – (xG: {finalXgB.toFixed(2)})
                       </span>
                     )}
                   </div>
                 </div>
 
                 {/* Team B */}
-                <div className="flex-1 flex flex-col items-center">
+                <div className="flex-1 flex flex-col items-center min-w-0">
                   <img
                     src={getTeamLogo(team_b)}
                     alt={team_b}
                     className="w-14 h-14 sm:w-16 sm:h-16 object-contain mb-3 drop-shadow-md"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
-                  <p className={`text-center font-bold text-sm sm:text-base leading-tight
+                  <p className={`text-center font-bold text-xs sm:text-base leading-tight px-1
                     ${bWins ? 'text-emerald-400' : 'text-slate-300'}`}
                   >
                     {team_b}
