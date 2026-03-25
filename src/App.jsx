@@ -1,14 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import DynamicBracket from './components/DynamicBracket';
-
-// ─── Data import ──────────────────────────────────────────────────────────────
-// Primary import from the local JSON file.
-// Vite resolves JSON imports natively; no extra plugin needed.
-import matchData from './data/predictions.json';
+import AboutAI from './components/AboutAI';
+import { useBracketPredictions } from './hooks/useBracketPredictions';
 
 export default function App() {
+  const { matches, isLoading, error, retry } = useBracketPredictions();
+
   return (
     <div
       className="min-h-screen flex flex-col w-full bg-slate-950"
@@ -17,19 +16,18 @@ export default function App() {
       {/* Navigation */}
       <Header />
 
-      {/* Main content — flex-grow so footer stays at bottom, no overflow constraints */}
+      {/* Main content */}
       <main className="flex-grow w-full">
         <HeroSection />
-
-        {/* Dynamic tournament bracket — driven entirely by predictions.json */}
-        <DynamicBracket matches={matchData} />
+        <DynamicBracket matches={matches} isLoading={isLoading} error={error} onRetry={retry} />
+        <AboutAI />
       </main>
 
       {/* Footer */}
       <footer className="border-t border-white/[0.04] py-8 text-center">
         <p className="text-xs text-slate-700">
-          PredictThePitch · Results sourced from{' '}
-          <code className="text-slate-600">Football Matches Dataset 2025 by Tarek Masry on Kaggle</code> · For entertainment only.
+          PredictThePitch · Predictions powered by{' '}
+          <code className="text-slate-600">XGBoost ML Model</code> · For entertainment only.
         </p>
         <p className="text-xs text-slate-800 mt-1">© 2026 · Artim007</p>
       </footer>

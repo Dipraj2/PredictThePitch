@@ -9,14 +9,14 @@
 
 /** @type {Record<string, { league: string; file: string }>} */
 const TEAM_META = {
-  "Paris Saint-Germain FC":     { league: "France - Ligue 1",           file: "Paris Saint-Germain" },
-  "Liverpool FC":                { league: "England - Premier League",   file: "Liverpool FC" },
-  "Real Madrid CF":              { league: "Spain - LaLiga",             file: "Real Madrid" },
-  "Bayern Munich":               { league: "Germany - Bundesliga",       file: "Bayern Munich" },
-  "FC Barcelona":                { league: "Spain - LaLiga",             file: "FC Barcelona" },
-  "Atlético Madrid":             { league: "Spain - LaLiga",             file: "Atlético de Madrid" },
-  "Sporting Clube de Portugal":  { league: "Portugal - Liga Portugal",   file: "Sporting CP" },
-  "Arsenal FC":                  { league: "England - Premier League",   file: "Arsenal FC" },
+  "Paris Saint-Germain":          { league: "France - Ligue 1",           file: "Paris Saint-Germain" },
+  "Liverpool":                    { league: "England - Premier League",   file: "Liverpool FC" },
+  "Real Madrid":                  { league: "Spain - LaLiga",             file: "Real Madrid" },
+  "Bayern Munich":                { league: "Germany - Bundesliga",       file: "Bayern Munich" },
+  "Barcelona":                    { league: "Spain - LaLiga",             file: "FC Barcelona" },
+  "Club Atlético de Madrid":      { league: "Spain - LaLiga",             file: "Atlético de Madrid" },
+  "Sporting Clube de Portugal":   { league: "Portugal - Liga Portugal",   file: "Sporting CP" },
+  "Arsenal":                      { league: "England - Premier League",   file: "Arsenal FC" },
 };
 
 /**
@@ -40,14 +40,14 @@ export function getTeamLogo(teamName) {
  */
 export function getShortName(teamName) {
   const SHORT_NAMES = {
-    "Paris Saint-Germain FC":    "Paris SG",
-    "Liverpool FC":               "Liverpool",
-    "Real Madrid CF":             "Real Madrid",
+    "Paris Saint-Germain":        "Paris SG",
+    "Liverpool":                  "Liverpool",
+    "Real Madrid":                "Real Madrid",
     "Bayern Munich":              "Bayern Munich",
-    "FC Barcelona":               "Barcelona",
-    "Atlético Madrid":            "Atlético Madrid",
+    "Barcelona":                  "Barcelona",
+    "Club Atlético de Madrid":    "Atlético Madrid",
     "Sporting Clube de Portugal": "Sporting CP",
-    "Arsenal FC":                 "Arsenal",
+    "Arsenal":                    "Arsenal",
   };
   return SHORT_NAMES[teamName] ?? teamName;
 }
