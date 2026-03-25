@@ -1,16 +1,45 @@
 import React, { useState } from 'react';
-import { Trophy, ArrowRight, ArrowLeft, Crown, X } from 'lucide-react';
+import { Trophy, ArrowRight, ArrowLeft, Crown, X, RefreshCw, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
-import MatchCard from './MatchCard';
+import TwoLegTieCard from './TwoLegTieCard';
+import NeutralFinalCard from './NeutralFinalCard';
 import PredictionModal from './PredictionModal';
+import BracketLoader from './BracketLoader';
 import { getTeamLogo } from '../utils/teamUtils';
 
-export default function DynamicBracket({ matches }) {
+
+
+/* ─── Error banner ───────────────────────────────────────────────────── */
+function ErrorBanner({ message, onRetry }) {
+  return (
+    <div
+      className="flex items-center gap-3 px-5 py-3 rounded-xl mb-6 mx-auto max-w-xl"
+      style={{
+        background: 'rgba(239,68,68,0.08)',
+        border: '1px solid rgba(239,68,68,0.25)',
+      }}
+    >
+      <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
+      <p className="text-sm text-red-300 flex-1">{message}</p>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-300 hover:bg-red-400/10 transition-colors"
+        >
+          <RefreshCw size={12} />
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default function DynamicBracket({ matches, isLoading, error, onRetry }) {
   const [celebrationWinner, setCelebrationWinner] = useState(null);
   const [selectedMatch, setSelectedMatch] = useState(null);
 
-  const byId = Object.fromEntries(matches.map(m => [m.match_id, m]));
+  const byId = Object.fromEntries((matches ?? []).map((m) => [m.match_id, m]));
 
   const qf1 = byId['QF1'];
   const qf2 = byId['QF2'];
@@ -19,6 +48,25 @@ export default function DynamicBracket({ matches }) {
   const qf4 = byId['QF4'];
   const sf2 = byId['SF2'];
   const final = byId['F1'];
+
+  const renderCard = (match, isFinal = false) => {
+    if (!match) return null;
+
+    return isFinal ? (
+      <NeutralFinalCard
+        match={match}
+        compact={false}
+        onClick={match.fetchError ? undefined : setSelectedMatch}
+        onCelebrate={setCelebrationWinner}
+      />
+    ) : (
+      <TwoLegTieCard
+        match={match}
+        compact={true}
+        onClick={match.fetchError ? undefined : setSelectedMatch}
+      />
+    );
+  };
 
   return (
     <section className="mt-0 pb-12 px-4 w-full">
@@ -36,38 +84,38 @@ export default function DynamicBracket({ matches }) {
           <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, rgba(139,92,246,0.4), transparent)' }} />
         </div>
 
-        <div className="overflow-x-auto pb-6 w-full">
-          <div className="flex items-center justify-center gap-4 min-w-[960px]">
+        {error && <ErrorBanner message={error} onRetry={onRetry} />}
+
+        {isLoading ? (
+          <BracketLoader />
+        ) : (
+        <div className="overflow-x-auto pb-6 w-full text-center" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="inline-flex items-center gap-0 min-w-max text-left px-2 sm:px-6">
 
             <BracketColumn label="Quarter-Finals">
-              <MatchCard match={qf1} compact onClick={setSelectedMatch} />
-              <MatchCard match={qf2} compact onClick={setSelectedMatch} />
+              {renderCard(qf1)}
+              {renderCard(qf2)}
             </BracketColumn>
 
             <BracketConnector />
 
             <BracketColumn label="Semi-Final">
-              <MatchCard match={sf1} compact onClick={setSelectedMatch} />
+              {renderCard(sf1)}
             </BracketColumn>
 
             <BracketConnector final />
 
-            <div className="flex flex-col items-center gap-3 mx-2">
-              <div className="flex items-center gap-2 mb-1">
-                <Trophy size={16} className="text-yellow-400" />
-                <span className="text-sm font-black text-yellow-400 uppercase tracking-widest"
+            <div className="flex flex-col items-center gap-1.5 mx-2">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <Trophy size={14} className="text-yellow-400" />
+                <span className="text-xs font-black text-yellow-400 uppercase tracking-widest"
                   style={{ fontFamily: "'Rajdhani', sans-serif" }}>
                   Final
                 </span>
                 <Trophy size={16} className="text-yellow-400" />
               </div>
               <div className="relative group">
-                <MatchCard
-                  match={final}
-                  compact={false}
-                  onClick={setSelectedMatch}
-                  onCelebrate={setCelebrationWinner}
-                />
+                {renderCard(final, true)}
                 <div className="absolute -inset-4 rounded-3xl blur-2xl opacity-20 pointer-events-none transition-opacity duration-300 group-hover:opacity-40 -z-10"
                   style={{ background: 'radial-gradient(circle, #eab308, transparent 70%)' }} />
               </div>
@@ -79,36 +127,39 @@ export default function DynamicBracket({ matches }) {
             <BracketConnector final direction="left" />
 
             <BracketColumn label="Semi-Final" alignRight>
-              <MatchCard match={sf2} compact onClick={setSelectedMatch} />
+              {renderCard(sf2)}
             </BracketColumn>
 
             <BracketConnector direction="left" />
 
             <BracketColumn label="Quarter-Finals" alignRight>
-              <MatchCard match={qf3} compact onClick={setSelectedMatch} />
-              <MatchCard match={qf4} compact onClick={setSelectedMatch} />
+              {renderCard(qf3)}
+              {renderCard(qf4)}
             </BracketColumn>
 
           </div>
         </div>
+        )}
 
         <p className="text-center text-[11px] text-slate-700 mt-2 md:hidden">
           Swipe to view the full bracket
         </p>
 
         <div className="flex flex-wrap justify-center gap-5 mt-10">
-          <LegendItem color="bg-emerald-500/30 border-emerald-500/40 text-emerald-300" label="Winner / Qualifier" />
-          <LegendItem color="bg-violet-500/10 border-violet-500/20 text-violet-400" label="Penalty shootout" />
+          <LegendItem color="bg-emerald-500/30 border-emerald-500/40 text-emerald-300" label="Predicted Winner" />
+          <LegendItem color="bg-slate-500/20 border-slate-500/30 text-slate-400" label="Predicted Draw" />
           <LegendItem color="bg-yellow-400/10 border-yellow-500/30 text-yellow-300" label="Champion" />
         </div>
       </div>
 
+      {/* Match detail modal */}
       <AnimatePresence>
         {selectedMatch && (
           <PredictionModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />
         )}
       </AnimatePresence>
 
+      {/* Celebration overlay */}
       <AnimatePresence>
         {celebrationWinner && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center">
@@ -173,11 +224,9 @@ export default function DynamicBracket({ matches }) {
 
 function BracketColumn({ label, children, alignRight }) {
   return (
-    <div className={`flex flex-col ${alignRight ? 'items-end' : 'items-start'} gap-6`}>
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 text-center w-full">{label}</p>
-      <div className="flex flex-col gap-6">
-        {children}
-      </div>
+    <div className={`flex flex-col ${alignRight ? 'items-end' : 'items-start'} gap-4`}>
+      <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-600 text-center w-full">{label}</p>
+      <div className="flex flex-col gap-4">{children}</div>
     </div>
   );
 }
@@ -185,17 +234,13 @@ function BracketColumn({ label, children, alignRight }) {
 function BracketConnector({ final = false, direction = 'right' }) {
   const Arrow = direction === 'left' ? ArrowLeft : ArrowRight;
   return (
-    <div className="flex items-center justify-center mx-1" style={{ width: 36 }}>
+    <div className="flex items-center justify-center mx-0.5" style={{ width: 14 }}>
       <div className="relative w-full flex items-center">
         {direction === 'right' && (
           <div className="flex-1 h-px"
             style={{ background: final ? 'rgba(234,179,8,0.35)' : 'rgba(139,92,246,0.35)' }} />
         )}
-        <Arrow
-          size={12}
-          className={final ? 'text-yellow-600' : 'text-violet-700'}
-          style={{ flexShrink: 0 }}
-        />
+        <Arrow size={8} className={final ? 'text-yellow-600' : 'text-violet-700'} style={{ flexShrink: 0 }} />
         {direction === 'left' && (
           <div className="flex-1 h-px"
             style={{ background: final ? 'rgba(234,179,8,0.35)' : 'rgba(139,92,246,0.35)' }} />

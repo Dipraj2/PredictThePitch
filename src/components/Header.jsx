@@ -3,9 +3,9 @@ import { Trophy, Zap, ChevronDown } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
 const NAV_LINKS = [
-  { label: '2025-26 UCL', href: '#', active: true },
+  { label: '2025-26 UCL', href: '#top', active: true },
   { label: 'Future Competitions', href: '#', badge: 'Coming Soon' },
-  { label: 'About the Model', href: '#' },
+  { label: 'About the Model', href: '#about-ai' },
 ];
 
 export default function Header() {

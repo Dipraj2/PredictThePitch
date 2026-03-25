@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Cpu } from 'lucide-react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, useMotionValue } from 'framer-motion';
 
 const STARS = Array.from({ length: 30 }, (_, i) => ({
   id: i,
@@ -12,10 +12,39 @@ const STARS = Array.from({ length: 30 }, (_, i) => ({
 
 export default function HeroSection() {
   const [visible, setVisible] = useState(false);
+  const sectionRef = useRef(null);
 
   const { scrollY } = useScroll();
-  const titleY = useTransform(scrollY, [0, 300], [0, -50]);
-  const heroOpacity = useTransform(scrollY, [0, 300], [1, 0]);
+
+  // Fade only at the bottom of the hero section
+  const fadeStart = useMotionValue(300);
+  const fadeEnd = useMotionValue(500);
+
+  useEffect(() => {
+    const updateRange = () => {
+      if (sectionRef.current) {
+        const h = sectionRef.current.offsetHeight;
+        fadeStart.set(h - 150);
+        fadeEnd.set(h + 50);
+      }
+    };
+    updateRange();
+    window.addEventListener('resize', updateRange);
+    return () => window.removeEventListener('resize', updateRange);
+  }, [fadeStart, fadeEnd]);
+
+  const titleY = useTransform(scrollY, (y) => {
+    const start = fadeStart.get();
+    const end = fadeEnd.get();
+    const t = Math.min(1, Math.max(0, (y - start) / (end - start)));
+    return t * -50;
+  });
+
+  const heroOpacity = useTransform(scrollY, (y) => {
+    const start = fadeStart.get();
+    const end = fadeEnd.get();
+    return 1 - Math.min(1, Math.max(0, (y - start) / (end - start)));
+  });
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 100);
@@ -23,7 +52,7 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="relative pt-10 pb-4">
+    <section ref={sectionRef} className="relative pt-10 pb-4">
       <div className="hero-grid absolute inset-0 pointer-events-none" />
 
       <div className="absolute inset-0 pointer-events-none"
@@ -91,8 +120,8 @@ export default function HeroSection() {
             ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         >
           {[
-            { value: '48.6%', label: 'Model Accuracy' },
-            { value: '6+', label: 'Features Analyzed' },
+            { value: '52.58%', label: 'Model Accuracy' },
+            { value: '5321+', label: 'Matches Analyzed' },
             { value: 'xG', label: 'Expected Goals' },
           ].map((stat) => (
             <div key={stat.label} className="glass-card px-6 py-3 flex flex-col items-center">
