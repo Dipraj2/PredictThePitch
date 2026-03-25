@@ -120,7 +120,7 @@ export default function HeroSection() {
             ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
         >
           {[
-            { value: '52.58%', label: 'Model Accuracy' },
+            { value: '55.55%', label: 'Model Accuracy' },
             { value: '5321+', label: 'Matches Analyzed' },
             { value: 'xG', label: 'Expected Goals' },
           ].map((stat) => (

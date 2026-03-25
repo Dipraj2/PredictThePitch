@@ -57,7 +57,7 @@ const sections = [
     label: 'Section 05',
     title: 'Accuracy and Limitations',
     content: [
-      `In football prediction, a blind guess yields a 33.3% accuracy rate. Professional sports betting syndicates typically peak around 54%. Through rigorous backtesting on hidden data, this XGBoost architecture consistently achieves a Win/Draw/Loss accuracy of over 52.58%, placing it squarely in the realm of professional-grade predictive analytics.`,
+      `In football prediction, a blind guess yields a 33.3% accuracy rate. Professional sports betting syndicates typically peak around 54%. Through rigorous backtesting on hidden data, this XGBoost architecture consistently achieves a Win/Draw/Loss accuracy of over 55.55%, placing it squarely in the realm of professional-grade predictive analytics.`,
     ],
     callout: `Football remains unpredictable by nature. This tool is designed to highlight statistical probabilities, not guarantee future outcomes.`,
   },
