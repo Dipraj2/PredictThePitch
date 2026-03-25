@@ -25,7 +25,7 @@ The second layer acts as a reality check. A separate XGBoost Classifier ignores 
 In statistical modeling, regressors and classifiers occasionally disagree. If the Regressors predict a 1-1 draw based on expected goals, but the Classifier highly favors the away team with a 60 percent win probability, a custom Python algorithm intervenes. The system treats the Classifier as the ultimate authority, forcing the final goal prediction to logically align with the highest probability outcome. This ensures that every prediction presented to the user is mathematically sound.
 
 ### Accuracy
-Through rigorous backtesting on hidden data, this XGBoost architecture consistently achieves a Win/Draw/Loss accuracy of over 53.5 percent. This places the engine squarely in the same performance tier as professional sports analytics and sports betting models.
+Through rigorous backtesting on hidden data, this XGBoost architecture consistently achieves a Win/Draw/Loss accuracy of over 52.58 percent. This places the engine squarely in the same performance tier as professional sports analytics and sports betting models.
 
 ## The Tech Stack
 
