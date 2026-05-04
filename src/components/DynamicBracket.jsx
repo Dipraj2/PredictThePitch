@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, ArrowRight, ArrowLeft, Crown, X, RefreshCw, AlertCircle } from 'lucide-react';
+import { Trophy, ArrowRight, ArrowLeft, Crown, X, RefreshCw, AlertCircle, Wifi } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
 import TwoLegTieCard from './TwoLegTieCard';
@@ -35,7 +35,7 @@ function ErrorBanner({ message, onRetry }) {
   );
 }
 
-export default function DynamicBracket({ matches, isLoading, error, onRetry }) {
+export default function DynamicBracket({ matches, isLoading, error, onRetry, dataSource }) {
   const [celebrationWinner, setCelebrationWinner] = useState(null);
   const [selectedMatch, setSelectedMatch] = useState(null);
 
@@ -75,11 +75,18 @@ export default function DynamicBracket({ matches, isLoading, error, onRetry }) {
         <div className="flex items-center gap-3 mb-4">
           <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, transparent, rgba(139,92,246,0.4))' }} />
           <div className="flex items-center gap-2 px-4 py-2 rounded-full"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(12px)' }}>
             <Trophy size={13} className="text-yellow-400" />
             <span className="text-sm font-semibold text-slate-300 uppercase tracking-widest">
               2025–26 UCL Bracket
             </span>
+            {dataSource === 'live' && (
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest"
+                style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.35)', color: '#34d399' }}>
+                <Wifi size={8} className="animate-pulse" />
+                Live
+              </span>
+            )}
           </div>
           <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, rgba(139,92,246,0.4), transparent)' }} />
         </div>
@@ -225,7 +232,14 @@ export default function DynamicBracket({ matches, isLoading, error, onRetry }) {
 function BracketColumn({ label, children, alignRight }) {
   return (
     <div className={`flex flex-col ${alignRight ? 'items-end' : 'items-start'} gap-4`}>
-      <p className="text-[9px] font-semibold uppercase tracking-widest text-slate-600 text-center w-full">{label}</p>
+      <div className="w-full flex justify-center">
+        <span
+          className="text-[9px] font-bold uppercase tracking-widest text-slate-500 px-3 py-1 rounded-full"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', backdropFilter: 'blur(8px)' }}
+        >
+          {label}
+        </span>
+      </div>
       <div className="flex flex-col gap-4">{children}</div>
     </div>
   );

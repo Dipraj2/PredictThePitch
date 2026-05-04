@@ -3,9 +3,13 @@
  * ─────────────
  * Thin wrapper around the XGBoost prediction API.
  * Base URL can be overridden via VITE_API_URL env var.
+ *
+ * Also exposes fetchUpcomingFixtures() which calls the Node.js middleware
+ * at VITE_MIDDLEWARE_URL (default: http://localhost:3001).
  */
 
 const API_BASE = import.meta.env.VITE_API_URL ?? 'https://diprajmitra-predict-the-pitch-api.hf.space';
+const MIDDLEWARE_BASE = import.meta.env.VITE_MIDDLEWARE_URL ?? 'http://localhost:3001';
 
 async function fetchInternal(endpoint, homeTeam, awayTeam) {
   const res = await fetch(`${API_BASE}${endpoint}`, {
@@ -40,7 +44,8 @@ async function fetchInternal(endpoint, homeTeam, awayTeam) {
  * @returns {Promise<{
  *   team_a: string, team_b: string,
  *   leg1_score: string, leg2_score: string, aggregate: string,
- *   advancing_team: string, won_on_penalties: boolean
+ *   advancing_team: string, won_on_penalties: boolean,
+ *   explanations: object,
  * }>}
  */
 export async function fetchTwoLegPrediction(teamA, teamB) {
@@ -56,9 +61,31 @@ export async function fetchTwoLegPrediction(teamA, teamB) {
  *   team_a: string, team_b: string,
  *   team_a_goals: number, team_b_goals: number,
  *   team_a_win_prob: number, draw_prob: number, team_b_win_prob: number,
- *   champion: string, won_on_penalties: boolean
+ *   champion: string, won_on_penalties: boolean,
+ *   explanations: object,
  * }>}
  */
 export async function fetchNeutralPrediction(teamA, teamB) {
   return fetchInternal('/predict_neutral', teamA, teamB);
+}
+
+/**
+ * Fetches upcoming UCL fixtures from the Node.js middleware.
+ * Falls back gracefully — returns { fixtures: [], source: 'error' } on failure.
+ *
+ * @returns {Promise<{ fixtures: Array, source: 'live'|'static'|'error' }>}
+ */
+export async function fetchUpcomingFixtures() {
+  try {
+    const res = await fetch(`${MIDDLEWARE_BASE}/api/fixtures/upcoming`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    console.log('[fixtures] source:', data.source, '— count:', data.count);
+    return data;
+  } catch (err) {
+    console.warn('[fixtures] Middleware unavailable, will use static fixtures:', err.message);
+    return { fixtures: [], source: 'error' };
+  }
 }

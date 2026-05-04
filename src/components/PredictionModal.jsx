@@ -1,12 +1,14 @@
 import React, { useEffect, useRef } from 'react';
-import { X, Trophy, TrendingUp, Cpu, Target, Activity } from 'lucide-react';
+import { X, Trophy, TrendingUp, Cpu, Target, Activity, BarChart2 } from 'lucide-react';
 import WinProbBar from './WinProbBar';
+import ExplainabilityPanel from './ExplainabilityPanel';
+import ConfidenceMeter from './ConfidenceMeter';
+import TeamStatRadar from './TeamStatRadar';
 import { getTeamLogo } from '../utils/teamUtils';
 
 export default function PredictionModal({ match, onClose }) {
   const overlayRef = useRef(null);
   const isFinal = match.stage === 'Final';
-
 
   const {
     stage: currentStage,
@@ -15,15 +17,15 @@ export default function PredictionModal({ match, onClose }) {
     team_a_goals, team_b_goals, champion, // Neutral Final
     team_a_win_prob, draw_prob, team_b_win_prob, // Neutral Final
     won_on_penalties,
-    // New metrics
+    // xG metrics
     home_xg, away_xg,
     team_a_xg, team_b_xg,
     leg1_team_a_xg, leg1_team_b_xg,
     leg2_team_a_xg, leg2_team_b_xg,
     confidence,
+    explanations, // ← NEW: feature importance weights
   } = match;
 
-  // Resolve xG depending on terminology from different endpoints
   const finalXgA = team_a_xg ?? home_xg;
   const finalXgB = team_b_xg ?? away_xg;
 
@@ -31,13 +33,12 @@ export default function PredictionModal({ match, onClose }) {
   const bWins = isFinal ? champion === team_b : advancing_team === team_b;
   const winner = isFinal ? champion : advancing_team;
 
-  // Format score based on stage
   let scoreLeft, scoreRight;
   if (isFinal) {
     scoreLeft = team_a_goals;
     scoreRight = team_b_goals;
   } else {
-    [scoreLeft, scoreRight] = (aggregate || "0-0").split('-').map(s => s.trim());
+    [scoreLeft, scoreRight] = (aggregate || '0-0').split('-').map(s => s.trim());
   }
 
   const handleBackdropClick = (e) => {
@@ -71,8 +72,10 @@ export default function PredictionModal({ match, onClose }) {
           maxHeight: 'calc(100vh - 4rem)',
         }}
       >
+        {/* Gradient top bar */}
         <div className="h-1 w-full rounded-t-2xl" style={{ background: 'linear-gradient(90deg, #7c3aed, #2563eb, #38bdf8)' }} />
 
+        {/* Header */}
         <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-white/[0.07]">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -87,15 +90,16 @@ export default function PredictionModal({ match, onClose }) {
           <button
             onClick={onClose}
             className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors ml-4 flex-shrink-0"
-            aria-label="Close"
+            aria-label="Close prediction modal"
           >
             <X size={18} />
           </button>
         </div>
 
+        {/* Scrollable body */}
         <div className="px-6 py-4 space-y-5 overflow-y-auto flex-1">
 
-
+          {/* ── Score / Aggregate ─────────────────────────────────────────── */}
           <section>
             <div className="rounded-xl px-4 py-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <p className="text-center text-[10px] text-slate-500 font-semibold uppercase tracking-widest mb-4">
@@ -111,9 +115,7 @@ export default function PredictionModal({ match, onClose }) {
                     className="w-14 h-14 sm:w-16 sm:h-16 object-contain mb-3 drop-shadow-md"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
-                  <p className={`text-center font-bold text-xs sm:text-base leading-tight px-1
-                    ${aWins ? 'text-emerald-400' : 'text-slate-300'}`}
-                  >
+                  <p className={`text-center font-bold text-xs sm:text-base leading-tight px-1 ${aWins ? 'text-emerald-400' : 'text-slate-300'}`}>
                     {team_a}
                   </p>
                   {aWins && (
@@ -126,17 +128,13 @@ export default function PredictionModal({ match, onClose }) {
                 {/* Score box */}
                 <div className="flex flex-col items-center gap-2 flex-shrink-0 min-w-[120px]">
                   <div className="px-3 py-3 sm:px-5 rounded-xl bg-slate-900/50 border border-white/5 flex flex-col items-center justify-center shadow-inner">
-
-                    {/* This span forces the numbers and dash to stay together */}
                     <span
                       className="text-2xl sm:text-4xl font-black tabular-nums text-white whitespace-nowrap"
                       style={{ fontFamily: "'Rajdhani', sans-serif" }}
                     >
                       {scoreLeft} – {scoreRight}
                     </span>
-
                     {typeof finalXgA === 'number' && typeof finalXgB === 'number' && (
-                      /* This span forces the xG to stay together */
                       <span className="text-[9px] sm:text-[10px] text-slate-400 font-semibold tracking-widest mt-1 whitespace-nowrap">
                         (xG: {finalXgA.toFixed(2)}) – (xG: {finalXgB.toFixed(2)})
                       </span>
@@ -152,9 +150,7 @@ export default function PredictionModal({ match, onClose }) {
                     className="w-14 h-14 sm:w-16 sm:h-16 object-contain mb-3 drop-shadow-md"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
-                  <p className={`text-center font-bold text-xs sm:text-base leading-tight px-1
-                    ${bWins ? 'text-emerald-400' : 'text-slate-300'}`}
-                  >
+                  <p className={`text-center font-bold text-xs sm:text-base leading-tight px-1 ${bWins ? 'text-emerald-400' : 'text-slate-300'}`}>
                     {team_b}
                   </p>
                   {bWins && (
@@ -167,7 +163,7 @@ export default function PredictionModal({ match, onClose }) {
             </div>
           </section>
 
-
+          {/* ── Two-Leg Breakdown ─────────────────────────────────────────── */}
           {!isFinal && (
             <section>
               <div className="flex items-center gap-2 mb-3">
@@ -193,16 +189,14 @@ export default function PredictionModal({ match, onClose }) {
             </section>
           )}
 
-
+          {/* ── Win Probability (Final only) ──────────────────────────────── */}
           {isFinal && typeof team_a_win_prob === 'number' && (
             <section>
               <div className="flex items-center gap-2 mb-3">
                 <TrendingUp size={14} className="text-slate-400" />
                 <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Win Probability Breakdown</h3>
               </div>
-              <p className="text-[11px] text-slate-500 mb-3">
-                XGBoost model probability for each outcome:
-              </p>
+              <p className="text-[11px] text-slate-500 mb-3">XGBoost model probability for each outcome:</p>
               <WinProbBar
                 homeTeam={team_a}
                 awayTeam={team_b}
@@ -213,39 +207,46 @@ export default function PredictionModal({ match, onClose }) {
             </section>
           )}
 
-
+          {/* ── Confidence Meter (Radial gauge) ───────────────────────────── */}
           {typeof confidence === 'number' && (
             <section>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Activity size={14} className="text-slate-400" />
-                  <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Prediction Confidence</h3>
-                </div>
-                <span className={`text-xs font-black tracking-widest ${confidence > 60 ? 'text-emerald-400' :
-                  confidence > 45 ? 'text-yellow-400' : 'text-slate-400'
-                  }`}>
-                  {confidence.toFixed(1)}%
-                </span>
+              <div className="flex items-center gap-2 mb-3">
+                <Activity size={14} className="text-slate-400" />
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Prediction Confidence</h3>
               </div>
-
               <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
-                The machine learning model's overall confidence predicting this specific matchup based on historical data patterns and expected outcome probabilities.
+                The model's overall confidence based on historical data patterns and outcome probabilities.
               </p>
-
-              <div className="h-2 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5 relative shadow-inner">
-                <div
-                  className={`absolute top-0 left-0 bottom-0 transition-all duration-[1500ms] ease-out 
-                    ${confidence > 60 ? 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]' :
-                      confidence > 45 ? 'bg-gradient-to-r from-yellow-600 to-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)]' :
-                        'bg-gradient-to-r from-slate-600 to-slate-400 shadow-[0_0_15px_rgba(148,163,184,0.5)]'
-                    }`}
-                  style={{ width: `${Math.min(100, Math.max(0, confidence))}%` }}
-                />
+              <div className="flex justify-center">
+                <ConfidenceMeter confidence={confidence} />
               </div>
             </section>
           )}
 
+          {/* ── Team Stat Radar ────────────────────────────────────────────── */}
+          {explanations && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <BarChart2 size={14} className="text-slate-400" />
+                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Team Strength Comparison</h3>
+              </div>
+              <div
+                className="rounded-xl px-2 py-2"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
+              >
+                <TeamStatRadar teamA={team_a} teamB={team_b} explanations={explanations} />
+              </div>
+            </section>
+          )}
 
+          {/* ── Explainability Panel ──────────────────────────────────────── */}
+          {explanations && (
+            <section>
+              <ExplainabilityPanel explanations={explanations} teamA={team_a} teamB={team_b} />
+            </section>
+          )}
+
+          {/* ── Winner Banner ─────────────────────────────────────────────── */}
           <div
             className="rounded-xl px-5 py-4 flex items-center gap-4"
             style={{
@@ -264,10 +265,7 @@ export default function PredictionModal({ match, onClose }) {
                 {isFinal ? 'Tournament Champion' : 'Stage Winner'}
               </p>
               <div className="flex items-center gap-2">
-                <p
-                  className="text-lg font-black text-yellow-300"
-                  style={{ fontFamily: "'Rajdhani', sans-serif" }}
-                >
+                <p className="text-lg font-black text-yellow-300" style={{ fontFamily: "'Rajdhani', sans-serif" }}>
                   {winner}
                 </p>
                 {won_on_penalties && (

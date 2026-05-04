@@ -86,3 +86,50 @@ body {
   0%, 100% { opacity: 0.2; transform: scale(1); }
   50%       { opacity: 1;   transform: scale(1.4); }
 }
+
+/* ── Recharts dark-mode overrides ───────────────────────────────────────── */
+.recharts-default-tooltip {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  color: #e2e8f0 !important;
+  font-size: 11px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+.recharts-tooltip-label { color: #94a3b8 !important; margin-bottom: 2px !important; }
+.recharts-legend-item-text { color: #94a3b8 !important; }
+
+/* Radial bar pop-in */
+@keyframes radialPop {
+  from { opacity: 0; transform: scale(0.8); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Live badge pulse ring */
+@keyframes livePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(52,211,153,0.4); }
+  70%  { box-shadow: 0 0 0 6px rgba(52,211,153,0); }
+  100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+}
+.live-badge { animation: livePulse 2s ease-out infinite; }
+
+/* ── v3: Auth modal slide-in ─────────────────────────────────────────────── */
+@keyframes authSlideIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)     scale(1); }
+}
+
+/* ── v3: Skeleton shimmer ────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { opacity: 0.5; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+/* ── v3: Input focus glow ────────────────────────────────────────────────── */
+input:focus { outline: none; }
+
+/* ── v3: Prose overrides for NarrativeCard ───────────────────────────────── */
+.prose h1,.prose h2,.prose h3 { color: #e2e8f0; margin-top: 0.75em; margin-bottom: 0.25em; }
+.prose strong { color: #cbd5e1; }
+.prose p { color: #94a3b8; margin-bottom: 0.75em; }

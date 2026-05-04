@@ -16,6 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Model Loading ──────────────────────────────────────────────────────────────
 outcome_model = XGBClassifier()
 outcome_model.load_model('outcome_model.json')
 home_model = XGBRegressor()
@@ -25,9 +26,52 @@ away_model.load_model('away_model.json')
 team_stats = joblib.load('team_stats.joblib')
 teams_df = pd.read_csv('teams_df.csv', index_col='name')
 
+# ── Feature Importance (XGBoost native — no extra deps) ───────────────────────
+# Map raw XGBoost feature names → human-readable labels shown in the UI
+FEATURE_LABEL_MAP = {
+    'home_team_id':      None,   # internal ID — excluded from UI
+    'away_team_id':      None,
+    'home_avg_scored':   'Home Attack',
+    'home_avg_conceded': 'Home Defense',
+    'home_goal_diff':    'Home Goal Diff',
+    'home_win_rate':     'Home Form',
+    'away_avg_scored':   'Away Attack',
+    'away_avg_conceded': 'Away Defense',
+    'away_goal_diff':    'Away Goal Diff',
+    'away_win_rate':     'Away Form',
+}
+
+FEATURE_COLUMNS = [
+    'home_team_id', 'away_team_id',
+    'home_avg_scored', 'home_avg_conceded', 'home_goal_diff', 'home_win_rate',
+    'away_avg_scored', 'away_avg_conceded', 'away_goal_diff', 'away_win_rate',
+]
+
+def get_feature_explanations(match_stats_df: pd.DataFrame) -> dict:
+    """
+    Returns per-feature normalised importance scores using XGBoost's native
+    feature_importances_ (gain-based). Excludes team ID columns and returns
+    values rounded to 4 decimal places in a UI-friendly dict.
+    """
+    importances = outcome_model.feature_importances_  # shape: (n_features,)
+    result = {}
+    total = 0.0
+    for feat, imp in zip(FEATURE_COLUMNS, importances):
+        label = FEATURE_LABEL_MAP.get(feat)
+        if label is None:
+            continue  # skip ID columns
+        result[label] = float(imp)
+        total += float(imp)
+    # Normalise so values sum to 1.0
+    if total > 0:
+        result = {k: round(v / total, 4) for k, v in result.items()}
+    return result
+
+
 class MatchRequest(BaseModel):
     team_a: str
     team_b: str
+
 
 def get_raw_prediction(home_team, away_team):
     home_matches = teams_df[teams_df.index.str.contains(home_team, case=False, na=False)]
@@ -53,11 +97,14 @@ def get_raw_prediction(home_team, away_team):
     home_xg = float(home_model.predict(match_stats)[0])
     away_xg = float(away_model.predict(match_stats)[0])
     probs = outcome_model.predict_proba(match_stats)[0]
+    explanations = get_feature_explanations(match_stats)
     
     return {
         "home_xg": home_xg, "away_xg": away_xg,
-        "away_prob": float(probs[0] * 100), "draw_prob": float(probs[1] * 100), "home_prob": float(probs[2] * 100)
+        "away_prob": float(probs[0] * 100), "draw_prob": float(probs[1] * 100), "home_prob": float(probs[2] * 100),
+        "explanations": explanations,
     }
+
 
 def enforce_hierarchy(home_xg, away_xg, home_prob, draw_prob, away_prob):
     h_goals = int(round(home_xg))
@@ -74,6 +121,7 @@ def enforce_hierarchy(home_xg, away_xg, home_prob, draw_prob, away_prob):
             
     return h_goals, a_goals
 
+
 @app.post("/predict_single")
 def predict_single(req: MatchRequest):
     raw = get_raw_prediction(req.team_a, req.team_b)
@@ -87,8 +135,10 @@ def predict_single(req: MatchRequest):
         "home_goals": h_goals, "away_goals": a_goals, 
         "home_xg": round(raw['home_xg'], 2), "away_xg": round(raw['away_xg'], 2),
         "home_win_prob": raw['home_prob'], "draw_prob": raw['draw_prob'], "away_win_prob": raw['away_prob'],
-        "confidence": round(confidence, 1)
+        "confidence": round(confidence, 1),
+        "explanations": raw['explanations'],
     }
+
 
 @app.post("/predict_two_leg")
 def predict_two_leg(req: MatchRequest):
@@ -114,6 +164,11 @@ def predict_two_leg(req: MatchRequest):
 
     confidence = (max(leg1['home_prob'], leg1['draw_prob'], leg1['away_prob']) + max(leg2['home_prob'], leg2['draw_prob'], leg2['away_prob'])) / 2
 
+    # Merge explanations (average of both legs)
+    merged_explanations = {}
+    for key in leg1['explanations']:
+        merged_explanations[key] = round((leg1['explanations'].get(key, 0) + leg2['explanations'].get(key, 0)) / 2, 4)
+
     return {
         "team_a": req.team_a, "team_b": req.team_b,
         "leg1_score": f"{l1_h}-{l1_a}", "leg2_score": f"{l2_a}-{l2_h}",
@@ -122,8 +177,10 @@ def predict_two_leg(req: MatchRequest):
         "aggregate": f"{agg_a}-{agg_b}",
         "advancing_team": winner,
         "won_on_penalties": penalties,
-        "confidence": round(confidence, 1)
+        "confidence": round(confidence, 1),
+        "explanations": merged_explanations,
     }
+
 
 @app.post("/predict_neutral")
 def predict_neutral(req: MatchRequest):
@@ -147,6 +204,11 @@ def predict_neutral(req: MatchRequest):
 
     confidence = max(avg_a_prob, avg_draw_prob, avg_b_prob)
 
+    # Merge explanations (average of both simulations)
+    merged_explanations = {}
+    for key in sim1['explanations']:
+        merged_explanations[key] = round((sim1['explanations'].get(key, 0) + sim2['explanations'].get(key, 0)) / 2, 4)
+
     return {
         "team_a": req.team_a, "team_b": req.team_b,
         "team_a_goals": goals_a, "team_b_goals": goals_b,
@@ -154,8 +216,10 @@ def predict_neutral(req: MatchRequest):
         "team_a_win_prob": avg_a_prob, "draw_prob": avg_draw_prob, "team_b_win_prob": avg_b_prob,
         "champion": winner,
         "won_on_penalties": penalties,
-        "confidence": round(confidence, 1)
+        "confidence": round(confidence, 1),
+        "explanations": merged_explanations,
     }
+
 
 if __name__ == "__main__":
     import uvicorn
