@@ -14,40 +14,40 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Search, ChevronDown, X } from 'lucide-react';
 import { getTeamLogo } from '../../utils/teamUtils';
 
-// Full 194-team list from teams_df.csv
+// Canonical team names from teams_df.csv — deduplicated, no informal aliases
 const ALL_TEAMS = [
-  'Manchester United','Ipswich Town','Arsenal','Everton','Newcastle United',
-  'Nottingham Forest','West Ham United','Brentford','Chelsea','Leicester City',
-  'Brighton & Hove Albion','Crystal Palace','Fulham','Manchester City','Southampton',
-  'Tottenham Hotspur','Aston Villa','ABournemouth','Wolverhampton Wanderers','Liverpool',
-  'Athletic Club','Real Betis Balompié','RC Celta de Vigo','UD Las Palmas','CA Osasuna',
-  'Valencia','Real Sociedad de Fútbol','RCD Mallorca','Real Valladolid','Villarreal',
-  'Sevilla','Barcelona','Getafe','RCD Espanyol de Barcelona','Real Madrid','CD Leganés',
-  'Deportivo Alavés','Club Atlético de Madrid','Rayo Vallecano de Madrid','Girona',
-  'GenoaC','Parma Calcio 1913','Empoli','AC Milan','Bologna 1909','Hellas Verona',
-  'Cagliari Calcio','SS Lazio','US Lecce','Juventus','Udinese Calcio',
-  'Internazionale Milano','AC Monza','ACF Fiorentina','Torino','SSC Napoli',
-  'AS Roma','Venezia','Como 1907','Atalanta BC','Borussia Mönchengladbach','RB Leipzig',
-  'TSG 1899 Hoffenheim','SC Freiburg','Augsburg','1. FSV Mainz 05','Borussia Dortmund',
-  'VfL Wolfsburg','St. Pauli 1910','1. Union Berlin','VfB Stuttgart',
-  'Eintracht Frankfurt','SV Werder Bremen','VfL Bochum 1848','Holstein Kiel',
-  'Bayer 04 Leverkusen','1. Heidenheim 1846','Bayern München','Le Havre AC',
-  'Stade Brestois 29','Stade de Reims','AS Monaco','AJ Auxerre','Montpellier HSC',
-  'Toulouse','Angers SCO','Stade Rennais 1901','Paris Saint-Germain','Olympique Lyonnais',
-  'Lille OSC','AS Saint-Étienne','Racing Club de Lens','RC Strasbourg Alsace','Nantes',
-  'OGC Nice','Olympique de Marseille','BSC Young Boys','Sporting Clube de Portugal',
-  'AC Sparta Praha','Club Brugge KV','Celtic','Feyenoord Rotterdam','FK Crvena Zvezda',
-  'PSV','Sport Lisboa e Benfica','Red Bull Salzburg','ŠK Slovan Bratislava',
-  'FK Shakhtar Donetsk','GNK Dinamo Zagreb','SK Sturm Graz','Galatasaray SK',
-  'Sporting Clube de Braga','København','Royal Antwerp','Porto','SK Slavia Praha',
-  'PAE Olympiakos SFP','FK Bodø/Glimt','Qarabağ Ağdam FK',
-  'Royale Union Saint-Gilloise','Brighton','Sunderland','Tottenham','Wolves',
-  "Nott'm Forest",'Man United','Leeds','West Ham','Man City','Bournemouth',
-  'Burnley','Newcastle','Mallorca','Alaves','Celta','Ath Bilbao','Espanol',
-  'Betis','Ath Madrid','Osasuna','Sociedad','Bayern Munich','Ein Frankfurt',
-  'Freiburg','Heidenheim','Leverkusen','Union Berlin','St Pauli','Mainz',
-  "M'gladbach",'Hoffenheim','Stuttgart','Werder Bremen','Wolfsburg','Dortmund',
-  'Sp Braga','Sp Lisbon','Benfica','Guimaraes','Rio Ave','Santa Clara','Porto',
+  // Premier League
+  'Arsenal','Aston Villa','ABournemouth','Brentford','Brighton & Hove Albion',
+  'Chelsea','Crystal Palace','Everton','Fulham','Ipswich Town',
+  'Leicester City','Liverpool','Manchester City','Manchester United','Newcastle United',
+  'Nottingham Forest','Southampton','Tottenham Hotspur','West Ham United','Wolverhampton Wanderers',
+  // La Liga
+  'Athletic Club','Club Atlético de Madrid','CA Osasuna','CD Leganés','Deportivo Alavés',
+  'Barcelona','Getafe','Girona','RCD Espanyol de Barcelona','RCD Mallorca',
+  'RC Celta de Vigo','Rayo Vallecano de Madrid','Real Betis Balompié','Real Madrid',
+  'Real Sociedad de Fútbol','Real Valladolid','Sevilla','UD Las Palmas','Valencia','Villarreal',
+  // Serie A
+  'AC Milan','AC Monza','ACF Fiorentina','AS Roma','Atalanta BC',
+  'Bologna 1909','Cagliari Calcio','Como 1907','Empoli','GenoaC',
+  'Hellas Verona','Internazionale Milano','Juventus','Parma Calcio 1913','SS Lazio',
+  'SSC Napoli','Torino','US Lecce','Udinese Calcio','Venezia',
+  // Bundesliga
+  '1. FSV Mainz 05','1. Heidenheim 1846','1. Union Berlin','Augsburg','Bayer 04 Leverkusen',
+  'Bayern München','Borussia Dortmund','Borussia Mönchengladbach','Eintracht Frankfurt',
+  'Holstein Kiel','RB Leipzig','SC Freiburg','St. Pauli 1910','SV Werder Bremen',
+  'TSG 1899 Hoffenheim','VfB Stuttgart','VfL Bochum 1848','VfL Wolfsburg',
+  // Ligue 1
+  'AJ Auxerre','Angers SCO','AS Monaco','AS Saint-Étienne','Le Havre AC',
+  'Lille OSC','Montpellier HSC','Nantes','OGC Nice','Olympique de Marseille',
+  'Olympique Lyonnais','Paris Saint-Germain','Racing Club de Lens','RC Strasbourg Alsace',
+  'Stade Brestois 29','Stade de Reims','Stade Rennais 1901','Toulouse',
+  // Champions League / Others
+  'AC Sparta Praha','BSC Young Boys','Celtic','Club Brugge KV','Feyenoord Rotterdam',
+  'FK Bodø/Glimt','FK Crvena Zvezda','FK Shakhtar Donetsk','Galatasaray SK',
+  'GNK Dinamo Zagreb','København','PAE Olympiakos SFP','Porto',
+  'PSV','Qarabağ Ağdam FK','Red Bull Salzburg','Royal Antwerp','Royale Union Saint-Gilloise',
+  'SK Slavia Praha','SK Sturm Graz','ŠK Slovan Bratislava','Sport Lisboa e Benfica',
+  'Sporting Clube de Braga','Sporting Clube de Portugal',
 ].sort((a, b) => a.localeCompare(b));
 
 export default function TeamSelector({ value, onChange, label, exclude }) {
