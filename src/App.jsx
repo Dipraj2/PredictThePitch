@@ -1,14 +1,20 @@
-import React from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import DynamicBracket from './components/DynamicBracket';
 import AboutAI from './components/AboutAI';
 import SimulatePage from './pages/SimulatePage';
+import DashboardPage from './pages/DashboardPage';
+import LeagueSimulatePage from './pages/LeagueSimulatePage';
+import DreamSimulatePage from './pages/DreamSimulatePage';
+import TournamentPage from './pages/TournamentPage';
+import ProtectedRoute from './components/ProtectedRoute';
+import AuthModal from './components/auth/AuthModal';
 import { useBracketPredictions } from './hooks/useBracketPredictions';
+import { useAuth } from './context/AuthContext';
 
-// Page transition wrapper
 function PageTransition({ children }) {
   return (
     <motion.div
@@ -34,23 +40,64 @@ function BracketPage() {
 }
 
 export default function App() {
-  const location = useLocation();
+  const location  = useLocation();
+  const navigate  = useNavigate();
+  const { user }  = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Handle ?auth=login query param (from ProtectedRoute redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('auth') === 'login') {
+      setShowAuthModal(true);
+    }
+  }, [location.search]);
+
+  // After login, check if there's a ?from= param to redirect to
+  useEffect(() => {
+    if (user) {
+      const params = new URLSearchParams(location.search);
+      const from   = params.get('from');
+      if (from) {
+        navigate(decodeURIComponent(from), { replace: true });
+      }
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div
       className="min-h-screen flex flex-col w-full"
       style={{ background: 'linear-gradient(180deg, #050810 0%, #0f172a 25%, #0c1526 100%)' }}
     >
-      <Header />
+      <Header onOpenAuth={() => setShowAuthModal(true)} />
 
       <main className="flex-grow w-full">
         <AnimatePresence mode="wait">
           <Routes location={location} key={location.pathname}>
+            {/* Public routes */}
             <Route path="/" element={<BracketPage />} />
             <Route path="/simulate" element={
-              <PageTransition>
-                <SimulatePage />
-              </PageTransition>
+              <PageTransition><SimulatePage /></PageTransition>
+            } />
+
+            {/* Mode routes — auth preferred but not required */}
+            <Route path="/simulate/league" element={
+              <PageTransition><LeagueSimulatePage /></PageTransition>
+            } />
+            <Route path="/simulate/dream" element={
+              <PageTransition><DreamSimulatePage /></PageTransition>
+            } />
+
+            {/* Protected routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <PageTransition><DashboardPage /></PageTransition>
+              </ProtectedRoute>
+            } />
+            <Route path="/tournament" element={
+              <ProtectedRoute>
+                <PageTransition><TournamentPage /></PageTransition>
+              </ProtectedRoute>
             } />
           </Routes>
         </AnimatePresence>
@@ -63,17 +110,19 @@ export default function App() {
         </p>
         <p className="text-xs text-slate-700 mt-1">
           Predictions powered by{' '}
-          <code className="text-slate-600">XGBoost·Recharts·FastAPI</code>
+          <code className="text-slate-600">XGBoost · Recharts · FastAPI</code>
           {' '}· For entertainment only.
         </p>
         <div className="flex items-center justify-center gap-2 mt-2">
           <span className="text-[10px] text-slate-800">© 2026 · Artim007</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full text-slate-700"
             style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            v3.0
+            v4.0
           </span>
         </div>
       </footer>
+
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     </div>
   );
 }

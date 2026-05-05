@@ -2,7 +2,7 @@
  * useSimulation.js
  * ────────────────
  * Custom hook managing simulation state:
- *  { simulate, result, isLoading, error, reset }
+ *  { simulate, result, events, isLoading, error, reset }
  */
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -14,7 +14,7 @@ export function useSimulation() {
   const [isLoading, setIsLoading] = useState(false);
   const [error,     setError]     = useState(null);
 
-  async function simulate(teamA, teamB) {
+  async function simulate(teamA, teamB, extras = {}) {
     if (!teamA || !teamB) {
       setError('Please select both teams.');
       return;
@@ -29,7 +29,7 @@ export function useSimulation() {
     setResult(null);
 
     try {
-      const data = await runSimulation(teamA, teamB, session?.access_token ?? null);
+      const data = await runSimulation(teamA, teamB, session?.access_token ?? null, extras);
       setResult(data);
     } catch (e) {
       setError(e.message);
@@ -43,5 +43,5 @@ export function useSimulation() {
     setError(null);
   }
 
-  return { simulate, result, isLoading, error, reset };
+  return { simulate, result, events: result?.events ?? null, isLoading, error, reset };
 }

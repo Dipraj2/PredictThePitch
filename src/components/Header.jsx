@@ -1,20 +1,30 @@
 import React, { useState } from 'react';
-import { Trophy, ChevronDown, Zap } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { Trophy, ChevronDown, Zap, LayoutDashboard } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import AuthButton from './auth/AuthButton';
+import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS = [
   { label: '2025-26 UCL', to: '/' },
-  { label: 'Simulate', to: '/simulate', badge: 'New' },
+  { label: 'Simulate', to: '/simulate', badge: 'v3', icon: Zap },
   { label: 'About the Model', to: '/#about-ai' },
 ];
 
-export default function Header() {
+export default function Header({ onOpenAuth }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, signOut }       = useAuth();
+  const navigate                = useNavigate();
 
-  const { scrollY } = useScroll();
-  const headerOpacity = useTransform(scrollY, [0, 200], [1, 0]);
+  const { scrollY }     = useScroll();
+  const headerOpacity   = useTransform(scrollY, [0, 200], [1, 0]);
+
+  const initials = user?.email ? user.email.slice(0, 2).toUpperCase() : '??';
+
+  async function handleSignOut() {
+    await signOut();
+    navigate('/');
+  }
 
   return (
     <motion.header
@@ -45,35 +55,72 @@ export default function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {NAV_LINKS.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
+            {NAV_LINKS.map((link) => {
+              const Icon = link.icon;
+              return (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) =>
+                    `relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2
+                    ${isActive ? 'text-violet-300 bg-violet-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`
+                  }
+                >
+                  {Icon && <Icon size={13} />}
+                  {link.label}
+                  {link.badge && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
+                      style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
+                      {link.badge}
+                    </span>
+                  )}
+                </NavLink>
+              );
+            })}
+
+            {/* Dashboard link when logged in */}
+            {user && (
+              <NavLink to="/dashboard"
                 className={({ isActive }) =>
                   `relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2
                   ${isActive ? 'text-violet-300 bg-violet-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`
-                }
-              >
-                {link.label === 'Simulate' && <Zap size={13} />}
-                {link.label}
-                {link.badge && (
-                  <span className="pulse-badge inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
-                    style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
-                    {link.badge}
-                  </span>
-                )}
+                }>
+                <LayoutDashboard size={13} />
+                Dashboard
               </NavLink>
-            ))}
+            )}
           </nav>
 
-          {/* Right side: Auth + Mobile toggle */}
+          {/* Right side: Auth */}
           <div className="flex items-center gap-3">
-            <AuthButton />
+            {user ? (
+              <div className="flex items-center gap-2">
+                {/* Avatar pill */}
+                <button onClick={() => navigate('/dashboard')}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all hover:bg-white/5"
+                  style={{ border: '1px solid rgba(139,92,246,0.25)' }}>
+                  <div className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black text-violet-300 flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg,rgba(124,58,237,0.4),rgba(37,99,235,0.3))' }}>
+                    {initials}
+                  </div>
+                  <span className="text-xs font-semibold text-slate-400 max-w-[100px] truncate hidden sm:block">
+                    {user.email?.split('@')[0]}
+                  </span>
+                </button>
+                <button onClick={handleSignOut}
+                  className="text-xs text-slate-600 hover:text-red-400 transition-colors px-2 py-1.5 rounded-lg hover:bg-red-500/10 hidden sm:block">
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <AuthButton onOpenAuth={onOpenAuth} />
+            )}
+
+            {/* Mobile toggle */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="md:hidden p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors"
-              aria-label="Toggle menu"
-            >
+              aria-label="Toggle menu">
               <ChevronDown size={20} className={`transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`} />
             </button>
           </div>
@@ -82,28 +129,45 @@ export default function Header() {
         {/* Mobile Nav */}
         {menuOpen && (
           <div className="md:hidden pb-4 border-t border-white/[0.06] pt-4 space-y-1">
-            {NAV_LINKS.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                onClick={() => setMenuOpen(false)}
+            {NAV_LINKS.map((link) => {
+              const Icon = link.icon;
+              return (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
+                    ${isActive ? 'text-violet-300 bg-violet-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`
+                  }>
+                  <div className="flex items-center gap-2">
+                    {Icon && <Icon size={13} />}
+                    {link.label}
+                  </div>
+                  {link.badge && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
+                      style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
+                      {link.badge}
+                    </span>
+                  )}
+                </NavLink>
+              );
+            })}
+            {user && (
+              <NavLink to="/dashboard" onClick={() => setMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
+                  `flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors
                   ${isActive ? 'text-violet-300 bg-violet-500/10' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'}`
-                }
-              >
-                <div className="flex items-center gap-2">
-                  {link.label === 'Simulate' && <Zap size={13} />}
-                  {link.label}
-                </div>
-                {link.badge && (
-                  <span className="pulse-badge inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide"
-                    style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
-                    {link.badge}
-                  </span>
-                )}
+                }>
+                <LayoutDashboard size={13} />Dashboard
               </NavLink>
-            ))}
+            )}
+            {user && (
+              <button onClick={handleSignOut}
+                className="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors">
+                Sign out
+              </button>
+            )}
           </div>
         )}
       </div>

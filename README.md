@@ -61,66 +61,78 @@ npm run dev
 ```
 The application will now be running on `http://localhost:5173`.
 
-## System Architecture (v3)
+## System Architecture (v4)
 
-The diagram below illustrates the full data flow from external APIs through the prediction engine to the authenticated user's browser.
+The diagram below illustrates the full v4 data flow: Supabase Auth gate → Dashboard mode selection → League or Dream routing → Match Day Engine animation → Result reveal.
 
 ```mermaid
 flowchart LR
     subgraph External["External APIs"]
         FD["⚽ football-data.org\nUCL Fixture Schedule"]
-        OAI["🤖 OpenAI GPT-4o-mini\nNarrative Generation\n(optional)"]
+        OAI["🤖 OpenRouter / GPT-4o-mini\nEvents[] + Narrative\n(optional)"]
     end
 
     subgraph Auth["Supabase Auth & DB"]
         SUPA_AUTH["Auth Service\nEmail/Password JWT"]
-        SUPA_DB[("PostgreSQL\nsimulations table")]
+        SUPA_DB[("PostgreSQL\nsimulations · tournaments")]
     end
 
     subgraph Middleware["Node.js Middleware\nserver/ · port 3001"]
         FC["fixturesController.js\nLive schedule + normalisation"]
-        SC["simulateController.js\nTeam validation · ML routing\nLLM narrative · DB save"]
-        AUTH_MW["requireAuth.js\nJWT verification"]
+        SC["simulateController.js\nLeague validation · ML routing\nLLM events[] + narrative · DB save"]
+        OPT_AUTH["optionalAuth.js\nJWT (optional)"]
     end
 
-    subgraph Python["Python ML API\nFastAPI · HuggingFace / local :8000"]
+    subgraph Python["Python ML API\nFastAPI · HuggingFace :8000"]
         XGB["XGBoost Models\n• home_model.json\n• away_model.json\n• outcome_model.json"]
         EXP["Feature Importance\nExplainability Engine"]
     end
 
     subgraph Frontend["React Frontend\nVite + Tailwind v4 · :5173"]
+        direction TB
         AUTH_UI["AuthModal / AuthButton\nSupabase Auth Client"]
-        HOOK["useBracketPredictions\nLive → Static fallback"]
-        MODAL["PredictionModal\n• ConfidenceMeter · TeamStatRadar\n• ExplainabilityPanel"]
-        SANDBOX["SimulatePage\n• TeamSelector (194 teams)\n• SimulationResult\n• NarrativeCard (typewriter)"]
+        DASH["DashboardPage\nMode Selection + History"]
+        LEAGUE["LeagueSimulatePage\n• 6-competition picker\n• Filtered team selector\n• Session points table"]
+        DREAM["DreamSimulatePage\n• 194-team unrestricted picker\n• Tournament Builder CTA"]
+        TOURN["TournamentPage\n• 8-team Knockout Bracket\n• 4-team Mini-League\n• BracketTree · MiniLeagueTable"]
+        MDE["MatchDayEngine\n• MatchClock 0→90'\n• Live events[] ticker\n• Goal confetti\n• Score count-up reveal"]
+        RESULT["SimulationResult\n• ConfidenceMeter · WinProbBar\n• TeamStatRadar · NarrativeCard"]
+        BRACKET["BracketPage\nPredictionModal · DynamicBracket"]
     end
 
     subgraph Deploy["Vercel"]
         CDN["predict-the-pitch.vercel.app"]
     end
 
-    %% Auth flow
+    %% Auth gate
     AUTH_UI -->|"email + password"| SUPA_AUTH
     SUPA_AUTH -->|"JWT"| AUTH_UI
-    AUTH_UI -->|"Bearer JWT"| AUTH_MW
+    AUTH_UI -->|"redirect after login"| DASH
+    DASH -->|"League mode"| LEAGUE
+    DASH -->|"Dream mode"| DREAM
+    DREAM -->|"Create tournament"| TOURN
 
-    %% Fixtures flow
-    FD -->|"GET /v4/competitions/CL/matches"| FC
-    FC -->|"POST /predict_two_leg\nPOST /predict_neutral"| XGB
-
-    %% Simulation flow
-    SANDBOX -->|"POST /api/simulate + JWT"| AUTH_MW
-    AUTH_MW --> SC
+    %% Simulation flow (both modes)
+    LEAGUE -->|"POST /api/simulate\n{mode:league, league:EPL}"| OPT_AUTH
+    DREAM  -->|"POST /api/simulate\n{mode:dream}"| OPT_AUTH
+    TOURN  -->|"POST /api/simulate\n{mode:tournament}"| OPT_AUTH
+    OPT_AUTH --> SC
+    SC -->|"league validation\nfrom leagueTeams.js"| SC
     SC -->|"POST /predict_single"| XGB
     XGB --> EXP
-    SC -->|"prompt + ML stats"| OAI
-    OAI -->|"narrative text"| SC
-    SC -->|"{ prediction + narrative }"| SANDBOX
-    SC -->|"save result"| SUPA_DB
+    SC -->|"prompt + ML stats → JSON"| OAI
+    OAI -->|"events[] + narrative"| SC
+    SC -->|"{ prediction + events[] + narrative }"| MDE
 
-    %% Bracket flow
-    EXP -->|"{ predictions + explanations }"| HOOK
-    HOOK --> MODAL
+    %% Match Day Engine → Result reveal
+    MDE -->|"onComplete(result)"| RESULT
+    SC -->|"save simulation"| SUPA_DB
+    TOURN -->|"save tournament"| SUPA_DB
+
+    %% UCL Bracket flow
+    FD -->|"GET /v4/competitions/CL/matches"| FC
+    FC -->|"POST /predict_two_leg\nPOST /predict_neutral"| XGB
+    EXP -->|"predictions + explanations"| BRACKET
 
     %% Deploy
     Frontend -->|"deploy"| CDN
@@ -133,14 +145,18 @@ flowchart LR
     style Deploy fill:#0c0a09,stroke:#d97706,color:#fbbf24
 ```
 
-### Data Flow Summary (v3)
+### Data Flow Summary (v4)
 
 | Step | Source → Destination | Protocol | Auth Required |
 |------|---------------------|----------|---------------|
 | 1 | User → Supabase Auth | HTTPS / JWT | — |
-| 2 | football-data.org → Node.js Middleware | REST GET | No |
-| 3 | Node.js Middleware → Python FastAPI | REST POST | No |
-| 4 | Frontend → `/api/simulate` | REST POST + JWT | Yes (when configured) |
-| 5 | Node.js → OpenAI GPT-4o-mini | REST POST | API Key |
-| 6 | Node.js → Supabase DB | PostgreSQL | Service Role |
-| 7 | React Frontend → Vercel CDN | Static deploy | — |
+| 2 | Auth → Dashboard → Mode Selection | React Router | ✅ Required |
+| 3 | football-data.org → Node.js Middleware | REST GET | No |
+| 4 | League/Dream/Tournament page → `/api/simulate` | REST POST + optional JWT | Optional |
+| 5 | Node.js: League validation against `leagueTeams.js` | In-process | — |
+| 6 | Node.js → Python FastAPI `/predict_single` | REST POST | No |
+| 7 | Node.js → OpenRouter GPT-4o-mini | REST POST | API Key |
+| 8 | LLM → structured `events[]` JSON + `narrative` | JSON response | — |
+| 9 | MatchDayEngine animates events 0→90' | Frontend | — |
+| 10 | Node.js → Supabase DB (simulations + tournaments) | PostgreSQL | Service Role |
+| 11 | React Frontend → Vercel CDN | Static deploy | — |
